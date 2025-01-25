@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lost and Found</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        input[type="text"], input[type="password"], textarea, input[type="file"] {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
+    <script>
+        const foundItems = JSON.parse(localStorage.getItem('foundItems')) || []; // Retrieve found items from localStorage or initialize empty array
+        const lostItems = JSON.parse(localStorage.getItem('lostItems')) || []; // Retrieve lost items from localStorage or initialize empty array
+
+        // Function to handle login
+        function handleLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (username && password) {
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('item-section').style.display = 'block';
+                document.getElementById('user-name').value = username; // Store the user's name for later use
+            } else {
+                alert('Please enter valid credentials!');
+            }
+        }
+
+        // Function to handle item submission
+        function handleItemSubmit() {
+            const itemType = document.querySelector('input[name="item-type"]:checked').value;
+            const description = document.getElementById('description').value;
+            const location = document.getElementById('location').value;
+            const image = document.getElementById('image').files[0];
+            const username = document.getElementById('user-name').value;
+
+            if (itemType && description && location && username) {
+                const reader = new FileReader();
+                reader.onload = function() {
+                    const imageData = reader.result;
+                    if (itemType === 'Found') {
+                        foundItems.push({ type: itemType, description, location, image: imageData, foundBy: username });
+                        localStorage.setItem('foundItems', JSON.stringify(foundItems)); // Save to localStorage
+                        alert('Thank you for submitting your found item!');
+                        displayFoundItems();
+                        showThankYouMessage(); // Show thank you message
+                    } else {
+                        lostItems.push({ type: itemType, description, location, image: imageData });
+                        localStorage.setItem('lostItems', JSON.stringify(lostItems)); // Save to localStorage
+                        alert('Lost item has been added.');
+                        displayFoundItems(); // Show found items for lost user
+                    }
+                };
+                if (image) {
+                    reader.readAsDataURL(image);
+                } else {
+                    if (itemType === 'Found') {
+                        foundItems.push({ type: itemType, description, location, image: null, foundBy: username });
+                        localStorage.setItem('foundItems', JSON.stringify(foundItems)); // Save to localStorage
+                        alert('Thank you for submitting your found item!');
+                        displayFoundItems();
+                        showThankYouMessage(); // Show thank you message
+                    } else {
+                        lostItems.push({ type: itemType, description, location, image: null });
+                        localStorage.setItem('lostItems', JSON.stringify(lostItems)); // Save to localStorage
+                        alert('Lost item has been added.');
+                        displayFoundItems(); // Show found items for lost user
+                    }
+                }
+
+                // Clear form fields after submission
+                document.getElementById('description').value = '';
+                document.getElementById('location').value = '';
+                document.getElementById('image').value = '';
+            } else {
+                alert('Please fill in all required details!');
+            }
+        }
+
+        // Function to display found items
+        function displayFoundItems() {
+            const table = document.getElementById('found-items-table');
+            table.innerHTML = `
+                <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Location</th>
+                    <th>Image</th>
+                    <th>Action</th>
+                </tr>`; 
+
+            // Display all found items
+            foundItems.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.type}</td>
+                    <td>${item.description}</td>
+                    <td>${item.location}</td>
+                    <td>${item.image ? `<img src="${item.image}" alt="Item Image" style="max-width: 100px;">` : 'No image'}</td>
+                    <td><button onclick="viewItemDetails(${index})">View</button></td>
+                `;
+                table.appendChild(row);
+            });
+        }
+
+        // Function to view item details
+        function viewItemDetails(index) {
+            const item = foundItems[index];
+            const lostUserName = prompt('Please enter your name to view the founder\'s details:');
+            if (lostUserName) {
+                const detailsSection = document.getElementById('item-details');
+                detailsSection.innerHTML = `
+                    <h3>Item Found Details</h3>
+                    <p><strong>Type:</strong> ${item.type}</p>
+                    <p><strong>Description:</strong> ${item.description}</p>
+                    <p><strong>Location:</strong> ${item.location}</p>
+                    <p><strong>Image:</strong> ${item.image ? `<img src="${item.image}" alt="Item Image" style="max-width: 100px;">` : 'No image'}</p>
+                    <p><strong>Found By:</strong> ${item.foundBy}</p>
+                `;
+                detailsSection.style.display = 'block';
+            }
+        }
+
+        // Function to show the thank you message for found item submitters
+        function showThankYouMessage() {
+            // Hide the item submission form and show the thank you message for found item submitters
+            document.getElementById('item-section').style.display = 'none';
+            document.getElementById('thank-you-section').style.display = 'block';
+        }
+
+        // Function to exit and reload the page
+        function exit() {
+            // Show exit message and reload page
+            alert("Thank you for your sincerity and effort!");
+            window.location.reload();
+        }
+
+        // Display the found items initially
+        displayFoundItems();
+    </script>
+</head>
+<body>
+    <div class="container">
+        <!-- Login Section -->
+        <div id="login-section">
+            <h1>Login</h1>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="handleLogin()">Login</button>
+        </div>
+
+        <!-- Item Submission Section -->
+        <div id="item-section" class="hidden">
+            <h1>Submit Lost or Found Item</h1>
+            <input type="hidden" id="user-name">
+            <label>
+                <input type="radio" name="item-type" value="Lost" onclick="displayFoundItems()"> Lost
+            </label>
+            <label>
+                <input type="radio" name="item-type" value="Found" onclick="displayFoundItems()"> Found
+            </label>
+            <textarea id="description" placeholder="Describe the item in detail"></textarea>
+            <input type="text" id="location" placeholder="Where did you lose/found the item?">
+            <input type="file" id="image" accept="image/*">
+            <button onclick="handleItemSubmit()">Submit Item</button>
+        </div>
+
+        <!-- Found Items Table Section -->
+        <h2>Found Items Table</h2>
+        <table id="found-items-table">
+            <tr>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Location</th>
+                <th>Image</th>
+                <th>Action</th>
+            </tr>
+        </table>
+
+        <!-- Item Details Section -->
+        <div id="item-details" class="hidden"></div>
+
+        <!-- Thank You Section for Found Item Submitters -->
+        <div id="thank-you-section" class="hidden">
+            <h2>Thank you for your honesty and effort in returning the found item!</h2>
+            <button onclick="exit()">Exit</button>
+        </div>
+    </div>
+</body>
+</html>
